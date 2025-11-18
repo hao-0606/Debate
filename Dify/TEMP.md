@@ -5,7 +5,7 @@
 # URL
 
 ```
-https://2fcce9dc-250b-4327-837e-0131fdac0d de-00-3l748zs6ogqma.picard.replit.dev/
+https://2fcce9dc-250b-4327-837e-0131fdac0dde-00-3l748zs6ogqma.picard.replit.dev/api/chat
 ```
 
 # A
