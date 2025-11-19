@@ -521,7 +521,190 @@ def main(argument: str) -> dict:
 
 <div align=center>
 
-# 🔟 迭代
+# 🔟 迭代 - 辯論迴圈 🔁
+
+</div>
+
+這份筆記整理了你的 **迭代節點 (Iteration)** 的核心設定。
+
+這是整個工作流的「心臟」，負責控制辯論要跑幾圈。它接收一個數字陣列（例如 `[1, 2, 3]`），然後對每個數字執行一次內部的邏輯，最後把每一圈的結果收集起來。
+
+---
+
+此節點接收 `rounds_array` 作為輸入，對每個回合執行辯論邏輯，並聚合每一輪的 `log_json` 紀錄。
+
+## ⚙️ 基本設定 (Configuration)
+
+| 設定項目 | 值 / 說明 |
+| :--- | :--- |
+| **節點類型** | 迭代 (Iteration) |
+| **功能** | 迴圈執行 (Loop Execution) |
+
+---
+
+### 📥 輸入列表 (Input List)
+
+這是決定迴圈跑幾次、以及迴圈變數 `item` 是什麼的關鍵。
+
+| 設定項目 | 值 / 來源 | 說明 |
+| :--- | :--- | :--- |
+| **輸入 (Input)** | `辯論陣列生成.rounds_array` | 來源必須是 `Array[Number]` (例如 `[1, 2, 3]`) |
+| **迭代變數 (Item)** | `item` (預設) | 在迭代內部代表當前回合數 (例如第 1 圈時 item=1) |
+
+---
+
+### 📤 輸出變量 (Output Variables)
+
+這是設定「迭代結束後，你要拿到什麼結果」。
+
+| 變數名稱 (Key) | 類型 (Type) | 來源值 (Value) | 說明 |
+| :--- | :--- | :--- | :--- |
+| **`Array`** (自定義名稱) | Array[String] | `數據紀錄.log_json` | 選擇迭代內部 **最後一個節點** 的輸出 |
+
+> **⚠️ 關鍵設定提醒**：
+> *   你的筆記上寫輸出變量名稱叫 `Array`，這名字有點籠統，建議改為 **`all_logs`** 或 **`debate_history`** 比較好識別。
+> *   **來源值**：必須選擇迭代框框內部 **最右邊/最後執行** 的那個節點（看起來叫做 `數據紀錄`）的輸出變數（`log_json`）。
+> *   這樣設定後，迭代節點的輸出就會是一個陣列：`['{json第1輪}', '{json第2輪}', ...]`。
+
+---
+
+### 🧩 迭代內部結構 (Internal Structure)
+
+(根據你的上下文推斷，內部應該包含以下流程)
+
+1.  **Code (Prompt 生成)**：根據 `item` 生成 A 和 B 的發言指令。
+2.  **HTTP (Call A)**：呼叫模型 A。
+3.  **Variable Assigner (Update A)**：更新 A 的記憶。
+4.  **HTTP (Call B)**：呼叫模型 B。
+5.  **Variable Assigner (Update B)**：更新 B 的記憶。
+6.  **Code (數據紀錄)**：將這一輪的 A、B 發言打包成 `log_json` (作為迭代輸出)。
+
+
+<div align=center>
+
+## 🔁1️⃣ A 回合提示詞 (Gen A Prompt)
+
+</div>
+
+### ⚙️ 基本設定 (Configuration)
+
+| 設定項目 | 值 / 說明 |
+| :--- | :--- |
+| **節點類型** | Code (Python 3) |
+| **功能** | 提示詞生成 (Prompt Engineering) |
+
+---
+
+### 📥 輸入變量 (Input Variables)
+
+| 變數名稱 (Key) | 來源節點 (Source) | 類型 | 說明 |
+| :--- | :--- | :--- | :--- |
+| **`previous_b_argument`**| `conversation.b_result` | String | 引用 **全域對話變數**，獲取 B 上一輪的發言內容。 |
+| **`round`** | `sys.iteration_index` | Number | 引用 **系統變數**，獲取當前是第幾輪 (1, 2, 3...)。 |
+
+> **✅ 關鍵點**：
+> *   `previous_b_argument` 必須引用 `conversation.b_result`（全域變數），因為 B 的發言是在上一輪（或初始設定）存進去的。
+> *   `round` 引用 `sys.iteration_index` 是最穩定的做法，不要用 `item`，因為 `index` 也是從 1 開始 (在 Dify 新版中通常是這樣，若從 0 開始程式碼需 `+1`)。
+
+---
+
+### 🐍 程式碼邏輯 (Python Code)
+
+```python
+def main(round: int, previous_b_argument: str) -> dict:
+    # 防呆：如果 B 還沒發言過 (例如 round 1)，給空字串避免 NoneType Error
+    prev_arg = previous_b_argument if previous_b_argument else "（無）"
+
+    if round == 1:
+        # 第一輪：不需要反駁，專注立論
+        prompt = "請針對辯題發表你的開場立論。"
+    else:
+        # 後續輪次：針對 B 的論點進行反駁
+        prompt = f"""
+對方剛才的論點是：
+「{prev_arg}」
+
+請：
+1. 指出對方論點的漏洞
+2. 提出你的反駁
+3. 強化你的立場
+"""
+    
+    # 回傳字典，Key 必須對應輸出變數名稱
+    return {
+        "A_round_P": prompt
+    } 
+```
+
+---
+
+### 📤 輸出變量 (Output Variables)
+
+| 變數名稱 (Key) | 類型 (Type) | 說明 |
+| :--- | :--- | :--- |
+| **`A_round_P`** | String | 生成好的提示詞，將傳給 HTTP 節點的 Body |
+
+<div align=center>
+
+## 🔁2️⃣ HTTP 節點：模型 A 辯論 (Debate - Call Model A)
+
+</div>
+
+### ⚙️ 基本設定 (Configuration)
+
+| 設定項目 | 值 / 說明 |
+| :--- | :--- |
+| **方法 (Method)** | `POST` |
+| **URL** | `{{#start.URL#}}` |
+| **鑑權 (Auth)** | 無 |
+| **驗證 SSL** | 開啟 |
+
+---
+
+### 📨 請求標頭 (Headers)
+
+| 鍵 (Key) | 值 (Value) |
+| :--- | :--- |
+| **Content-Type** | `application/json` |
+
+---
+
+### 📦 請求內容 (Body) - JSON
+
+這是最容易出錯的地方，請仔細檢查變數來源是否正確（特別是 ID 的部分）。
+
+```json
+{
+  "message": "{{#A-Round提示詞.A_round_P#}}",
+  "model": "{{#start.a_model#}}",
+  "model_mode": "{{#start.a_mode#}}",
+  "conversation_id": "{{#conversation.a_conversation_id#}}",
+  "parent_response_id": "{{#conversation.a_response_id#}}",
+  "cookie": "{{#conversation.a_cookie#}}"
+}
+```
+
+### 🔍 關鍵檢查點 (Checklist)
+
+1.  **Prompt 來源 (`message`)**：
+    *   這裡引用的是 `{{#A-Round提示詞.A_round_P#}}`。
+    *   請確認 `A-Round提示詞` 是一個在迭代內部的 **Code 節點**，它負責根據當前回合數生成「正方請發言」或「正方請反駁」的指令。
+
+2.  **記憶連貫性 (`conversation_id`)**：
+    *   **✅ 正確**：引用 `{{#conversation.a_conversation_id#}}` (全域對話變數)。
+    *   **❌ 錯誤**：引用 `{{#start.a_orig_converID#}}` (初始固定值)。
+    *   **原因**：因為在每一輪結束時，你都有用「變數賦值器」更新全域變數。所以這裡讀取全域變數，就能拿到上一輪最新產生的 ID，實現記憶接龍。
+
+3.  **Cookie 位置**：
+    *   再次提醒，如果 API 文件要求 Cookie 放 Header，這裡放 Body 可能會無效。但如果你確定 Replit 那端的 API 是從 Body 讀 `cookie` 欄位，那就維持這樣沒問題。
+
+4.  **變數顏色**：
+    *   在 Dify 設定畫面中，`a_conversation_id` 和 `a_cookie` 應該要是 **紫色** (代表 Conversation Variable)，而不是藍色 (Start/Node Variable)。
+
+
+<div align=center>
+
+## 🔁3️⃣
 
 </div>
 
@@ -530,78 +713,56 @@ def main(argument: str) -> dict:
 
 <div align=center>
 
-## 
-
-</div>
-
-
-
-<div align=center>
-
-## 
+## 🔁4️⃣
 
 </div>
 
 
 <div align=center>
 
-## 
+## 🔁5️⃣
 
 </div>
 
 
 <div align=center>
 
-## 
+## 🔁6️⃣
 
 </div>
 
 
 <div align=center>
 
-## 
+## 🔁7️⃣
 
 </div>
 
 
 <div align=center>
 
-## 
+## 🔁8️⃣
 
 </div>
 
 
 <div align=center>
 
-## 
+## 🔁
 
 </div>
 
 
 <div align=center>
 
-## 
+## 🔁
 
 </div>
 
 
 <div align=center>
 
-## 
-
-</div>
-
-
-<div align=center>
-
-## 
-
-</div>
-
-
-<div align=center>
-
-## 
+## 🔁
 
 </div>
 
