@@ -2,6 +2,69 @@
 
 <div align=center>
 
+# 0️⃣ 對話變數
+
+</div>
+
+這份筆記整理了你的 **對話變數 (Conversation Variables)** 設定。這些變數是「全域」的，意味著它們會在整場對話中一直存在，並且可以被更新（Read/Write）。
+
+這對於你的**多輪辯論**至關重要，因為你需要它們來記住「目前辯論到哪裡了」以及「雙方的記憶 ID」。
+
+以下是整理好的表格：
+
+---
+
+# 💾 對話變數設定 (Conversation Variables)
+
+這些變數用於在多次對話輪次中保持狀態，確保模型 A 和模型 B 的記憶連貫，並儲存 API 認證資訊。
+
+### 1. 認證與連線 (Authentication)
+
+| 變數名稱 (Name) | 類型 (Type) | 預設值 (Default) | 說明 |
+| :--- | :--- | :--- | :--- |
+| **`a_cookie`** | String | `share_token=3494...` (長字串) | **模型 A** 的 HTTP 請求 Cookie，包含 Token 和 Mixpanel 資訊。 |
+| **`b_cookie`** | String | `share_token=b42f...` (長字串) | **模型 B** 的 HTTP 請求 Cookie，包含 Token 和 Mixpanel 資訊。 |
+
+> **⚠️ 注意**：這些 Cookie 包含敏感資訊且長度很長，確保在 HTTP 請求 Header 中正確引用 `{{conversation.a_cookie}}`。
+
+---
+
+### 2. 對話狀態與記憶 (State & Memory)
+
+這些變數通常初始為空，隨著辯論進行，會被 Workflow 中的「變數賦值器 (Variable Assigner)」不斷更新。
+
+| 變數名稱 (Name) | 類型 (Type) | 初始狀態 | 說明 |
+| :--- | :--- | :--- | :--- |
+| **`a_conversation_id`**| String | (空) | 記錄 **模型 A** 當前在 Replit/API 端的對話 ID。 |
+| **`a_response_id`** | String | (空) | 記錄 **模型 A** 上一次回應的 Message ID (用於追蹤)。 |
+| **`a_result`** | String | (空) | 暫存 **模型 A** 最近一次的發言內容。 |
+| **`b_conversation_id`**| String | (空) | 記錄 **模型 B** 當前在 Replit/API 端的對話 ID。 |
+| **`b_response_id`** | String | (空) | 記錄 **模型 B** 上一次回應的 Message ID (用於追蹤)。 |
+| **`b_result`** | String | (空) | 暫存 **模型 B** 最近一次的發言內容。 |
+
+---
+
+### 🔄 變數流轉邏輯 (Workflow Logic)
+
+為了讓你更清楚這些變數怎麼用，以下是它們在工作流中的生命週期：
+
+1.  **初始化**：第一次執行時，`a_conversation_id` 為空，系統可能會使用 Start 節點的 `a_orig_converID` 作為備案。
+2.  **HTTP 請求 (A)**：
+    *   **Input**: 使用 `a_conversation_id` (若有值)。
+    *   **Header**: 使用 `a_cookie`。
+3.  **更新變數 (A)**：
+    *   API 回傳後，將新的 ID 寫入 `a_conversation_id`。
+    *   將回應內容寫入 `a_result`。
+4.  **HTTP 請求 (B)**：
+    *   **Input**: 使用 `b_conversation_id` 和 `a_result` (作為靶子)。
+    *   **Header**: 使用 `b_cookie`。
+5.  **更新變數 (B)**：
+    *   API 回傳後，更新 `b_conversation_id` 和 `b_result`。
+
+這樣設計能確保無論使用者何時按「繼續」，雙方的記憶都是連貫的！
+
+<div align=center>
+
 # 1️⃣ 開始節點變數
 
 </div>
