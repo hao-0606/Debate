@@ -168,9 +168,9 @@ def main(argument: str) -> dict:
     markdown = f"""
 ---
 
-## 🔵 正方論述
+# 💬 題目輸出
 
-> 💬 {argument}
+ {argument}
 
 <sub>⏰ {timestamp}</sub>
 
@@ -199,7 +199,7 @@ def main(argument: str) -> dict:
 
 <div align=center>
 
-# 4️⃣ 直接回覆
+# --> 直接回覆
 
 </div>
 
@@ -209,7 +209,311 @@ def main(argument: str) -> dict:
 
 <div align=center>
 
-# 5️⃣ 辯論陣列生成（Code）
+# 4️⃣ 辯論陣列生成（Code）
+
+</div>
+
+### ⚙️ 基本設定 (Configuration)
+
+| 設定項目 | 值 / 說明 |
+| :--- | :--- |
+| **節點類型** | Code (Python 3) |
+| **功能** | 生成迭代陣列 (Array Generation) |
+| **失敗時重試** | **開啟** (建議，雖然這段代碼極少失敗) |
+
+---
+
+### 📥 輸入變量 (Input Variables)
+
+| 變數名稱 (Key) | 來源節點 (Source) | 類型 | 說明 |
+| :--- | :--- | :--- | :--- |
+| **`max_rounds`** | `開始.max_rounds` | Number | 辯論的總回合數 (例如: 5) |
+
+---
+
+### 🐍 程式碼邏輯 (Python Code)
+
+```python
+def main(max_rounds: int) -> dict:
+    """
+    生成迭代用的數字陣列
+    例如 max_rounds = 3 -> 回傳 [1, 2, 3]
+    """
+    # 簡單直接：生成範圍從 1 到 max_rounds 的數字列表
+    rounds = list(range(1, max_rounds + 1))
+    
+    return {
+        "rounds_array": rounds 
+    }
+```
+
+---
+
+### 📤 輸出變量 (Output Variables)
+
+請務必在節點右側面板設定正確的變數類型，這是最容易出錯的地方。
+
+| 變數名稱 (Key) | 類型 (Type) | 說明 |
+| :--- | :--- | :--- |
+| **`rounds_array`** | **Array[Number]** | 純數字陣列 (例如 `[1, 2, 3]`) |
+
+> **⚠️ 特別注意**：輸出類型一定要選 **Array[Number]**，不能選 Array[String] 或 Object，否則後面的迭代節點會因為類型不符而報錯 (`The element ... must be a number`)。
+
+<div align=center>
+
+# 5️⃣ 並行-模型A、B  (初)
+
+</div>
+
+## 🌐 HTTP 節點：模型請求
+
+此節點負責將「題目生成」節點產生的 Prompt 發送給外部 API（Model A），以獲取正方的論述。
+
+### ⚙️ 基本設定 (Configuration)
+
+| 設定項目 | 值 / 說明 |
+| :--- | :--- |
+| **方法 (Method)** | `POST` (預設) |
+| **URL** | `{{#start.URL#}}` (引用開始節點的變數) |
+| **鑑權 (Auth)** | 無 (None) - *透過 Body 或 Header 自行傳遞* |
+| **驗證 SSL** | 開啟 (Enabled) |
+
+---
+
+### 📨 請求標頭 (Headers)
+
+| 鍵 (Key) | 值 (Value) |
+| :--- | :--- |
+| **Content-Type** | `application/json` |
+
+---
+
+### 📦 A - 請求內容 (Body) - JSON
+
+```json
+{
+  "message": "{{#題目生成.text#}}",
+  "model": "{{#start.a_model#}}",
+  "model_mode": "{{#start.a_mode#}}",
+  "conversation_id": "{{#start.a_orig_converID#}}",
+  "parent_response_id": "{{#start.a_orig_respondID#}}",
+  "cookie": "{{#conversation.a_cookie#}}"
+}
+```
+
+---
+
+### 📦 B - 請求內容 (Body) - JSON
+
+```json
+{
+  "message": "{{#題目生成.text#}}",
+  "model": "{{#start.b_model#}}",
+  "model_mode": "{{#start.b_mode#}}",
+  "conversation_id": "{{#start.b_orig_converID#}}",
+  "parent_response_id": "{{#start.b_orig_respondID#}}",
+  "cookie": "{{#conversation.b_cookie#}}"
+}
+```
+
+
+<div align=center>
+
+# 6️⃣ 並行-模型A、B 初-Catch
+
+</div>
+
+此節點負責解析 API 回傳的 JSON 資料，提取模型的回應內容及更新後的對話 ID。
+
+## ⚙️ 基本設定 (Configuration)
+
+| 設定項目 | 值 / 說明 |
+| :--- | :--- |
+| **節點類型** | Code (Python 3) |
+| **功能** | JSON 解析 (JSON Parsing) |
+| **失敗時重試** | **開啟** (建議，避免因為網路波動導致單次解析失敗) |
+
+---
+
+### 📥 輸入變量 (Input Variables)
+
+| 變數名稱 (Key) | 來源節點 (Source) | 類型 | 說明 |
+| :--- | :--- | :--- | :--- |
+| **`api_response`** | `模型A (初).body` | String | HTTP 請求回傳的完整內容 |
+
+> **⚠️ 注意**：來源節點名稱為 `模型A (初)`，這應該是你上一個 HTTP 節點的名稱。請確保選擇的是 `body` 屬性。
+
+---
+
+### 🐍 程式碼邏輯 (Python Code)
+
+這段代碼有做基本的防呆處理，能應對成功和失敗的情況。
+
+```python
+import json
+
+def main(api_response: str) -> dict:
+    """
+    更新對話上下文
+    從 API 回應中提取 conversation_id 和 response_id
+    """
+    try:
+        # 1. 解析 JSON：兼容字串或字典輸入
+        data = json.loads(api_response) if isinstance(api_response, str) else api_response
+        
+        # 2. 判斷 API 是否成功 (假設 API 回傳包含 success 欄位)
+        if data.get("success"):
+            result_data = data.get("data", {})
+            
+            # 3. 提取關鍵資訊
+            return {
+                "answer": result_data.get("response", ""),
+                "new_conversation_id": result_data.get("conversation_id", ""),
+                "new_response_id": result_data.get("response_id", ""),
+                "is_new": result_data.get("is_new_conversation", False)
+            }
+        else:
+            # API 回傳失敗訊息
+            return {
+                "answer": f"錯誤：{data.get('error', '未知錯誤')}",
+                "new_conversation_id": "",
+                "new_response_id": "",
+                "is_new": False
+            }
+            
+    except Exception as e:
+        # 程式解析炸裂 (例如 JSON 格式錯誤)
+        return {
+            "answer": f"解析錯誤：{str(e)}",
+            "new_conversation_id": "",
+            "new_response_id": "",
+            "is_new": False
+        }
+```
+
+---
+
+### 📤 輸出變量 (Output Variables)
+
+| 變數名稱 (Key) | 類型 (Type) | 說明 |
+| :--- | :--- | :--- |
+| **`answer`** | String | 模型的回答內容 (最重要！) |
+| **`new_conversation_id`** | String | 更新後的對話 ID |
+| **`new_response_id`** | String | 更新後的回應 ID |
+| **`is_new`** | Boolean | 是否為新對話 |
+
+<div align=center>
+
+# 7️⃣ 變數賦值器：更新 A、B 記憶 (Update A Memory)
+
+</div>
+
+## ⚙️ 基本設定 (Configuration)
+
+| 設定項目 | 值 / 說明 |
+| :--- | :--- |
+| **節點類型** | 變數賦值器 (Variable Assigner) |
+| **功能** | 寫入模式 (Write Mode) |
+
+---
+
+## 🔄 賦值邏輯 (Assignment Logic)
+
+| 目標變數 (Target Variable) | 操作 (Operation) | 來源值 (Source Value) | 說明 |
+| :--- | :--- | :--- | :--- |
+| **`conversation.a_response_id`** | **覆寫 (Set)** | `A初-CATCH.new_response_id` | 更新 A 的回應 ID |
+| **`conversation.a_conversation_id`** | **覆寫 (Set)** | `A初-CATCH.new_conversation_id` | 更新 A 的對話 ID (最重要!) |
+
+<div align=center>
+
+# 8️⃣ A、B 初轉 MD
+
+</div>
+
+## 📥 輸入變量 (Input Variables)
+
+| 變數名稱 (Key) | 來源節點 (Source) | 類型 | 說明 |
+| :--- | :--- | :--- | :--- |
+| **`argument`** | `A初-CATCH.answer` | String | 正方 LLM 生成的原始論述內容 |
+
+---
+
+## 🐍 程式碼邏輯 (Python Code)
+
+### A-Code
+
+```python
+def main(argument: str) -> dict:
+    """
+    將正方發言轉為美觀的 Markdown
+    """
+    from datetime import datetime
+    
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    
+    markdown = f"""
+---
+
+## 🔵 正方論述
+
+> 💬 {argument}
+
+<sub>⏰ {timestamp}</sub>
+
+---
+"""
+    
+    return {
+        "markdown": markdown,
+        "text": argument
+    }
+```
+
+---
+
+### B-Code
+
+```python
+def main(argument: str) -> dict:
+    """
+    將反方發言轉為美觀的 Markdown
+    """
+    from datetime import datetime
+    
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    
+    markdown = f"""
+---
+
+## 🔴 反方論述
+
+> 💬 {argument}
+
+<sub>⏰ {timestamp}</sub>
+
+---
+"""
+    
+    return {
+        "markdown": markdown,
+        "text": argument
+    }
+```
+
+### 📤 輸出變量 (Output Variables)
+
+請務必在節點右側面板設定以下輸出變數，否則後續節點無法獲取數據。
+
+| 變數名稱 (Key) | 類型 (Type) | 說明 |
+| :--- | :--- | :--- |
+| **`markdown`** | String | 格式化好的 Markdown 字串 (給 UI 顯示用) |
+| **`text`** | String | 原始純文字 (如果後續需要純文字分析可用) |
+
+---
+
+<div align=center>
+
+# 9️⃣ --> 直接回覆
 
 </div>
 
@@ -217,7 +521,16 @@ def main(argument: str) -> dict:
 
 <div align=center>
 
-# 6️⃣ 並行-模型A、B  (初)
+# 🔟 迭代
+
+</div>
+
+
+
+
+<div align=center>
+
+## 
 
 </div>
 
@@ -225,80 +538,83 @@ def main(argument: str) -> dict:
 
 <div align=center>
 
-# 7️⃣ 並行-模型A、B 初-Catch
-</div>
+## 
 
+</div>
 
 
 <div align=center>
 
-# 8️⃣ 
+## 
 
 </div>
-
 
 
 <div align=center>
 
-# 9️⃣
+## 
 
 </div>
-
 
 
 <div align=center>
 
-# 
+## 
 
 </div>
-
 
 
 <div align=center>
 
-# 
+## 
 
 </div>
-
 
 
 <div align=center>
 
-# 
+## 
 
 </div>
-
 
 
 <div align=center>
 
-# 
+## 
 
 </div>
-
 
 
 <div align=center>
 
-# 
+## 
 
 </div>
-
 
 
 <div align=center>
 
-# 
+## 
 
 </div>
-
 
 
 <div align=center>
 
-# 
+## 
 
 </div>
 
 
+<div align=center>
 
+## 
+
+</div>
+
+
+<div align=center>
+
+## 
+
+</div>
