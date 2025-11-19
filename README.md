@@ -792,9 +792,26 @@ def main(api_response: str) -> dict:
 
 <div align=center>
 
-## 🔁4️⃣ 
+## 🔁4️⃣ 變數賦值器：更新 A 記憶
 
 </div>
+
+## ⚙️ 基本設定 (Configuration)
+
+| 設定項目 | 值 / 說明 |
+| :--- | :--- |
+| **節點類型** | 變數賦值器 (Variable Assigner) |
+| **功能** | 寫入模式 (Write Mode) |
+
+---
+
+## 🔄 賦值邏輯 (Assignment Logic)
+
+| 目標變數 (Target Variable) | 操作 (Operation) | 來源值 (Source Value) | 說明 |
+| :--- | :--- | :--- | :--- |
+| **`conversation.a_response_id`** | **覆寫 (Set)** | `A-CATCH.new_response_id` | 更新 A 的回應 ID |
+| **`conversation.a_conversation_id`** | **覆寫 (Set)** | `A-CATCH.new_conversation_id` | 更新 A 的對話 ID (最重要) |
+| **`conversation.a_result`** | **覆寫 (Set)** | `A-CATCH.answer` | 更新 A 的回應 |
 
 
 <div align=center>
