@@ -787,8 +787,6 @@ def main(api_response: str) -> dict:
 | **`new_response_id`** | String | 更新後的回應 ID |
 | **`is_new`** | Boolean | 是否為新對話 |
 
-<div align=center>
-
 
 <div align=center>
 
