@@ -6,16 +6,6 @@
 
 </div>
 
-這份變數清單非常詳細，為了方便你做筆記（例如放入 Notion、Obsidian 或技術文檔），我幫你整理成 **Markdown 表格** 以及 **分類清單** 兩種格式。
-
-這樣你以後要複製貼上或檢查設定時會一目瞭然。
-
----
-
-### 📋 格式一：Markdown 表格（適合技術文檔）
-
-這份表格包含了所有變數的關鍵資訊，可以直接複製到你的筆記軟體中。
-
 | 變數名稱 (Key) | 顯示名稱 (Display Name) | 類型 | 預設值 / 範例 | 備註 |
 | :--- | :--- | :--- | :--- | :--- |
 | **debate_topic** | 辯論主題 | String | 古代男孩 16 歲左右就可以結婚是合理的事情嗎？... | 核心辯題 |
@@ -31,4 +21,52 @@
 | **a_orig_respondID**| 模型A-前回應ID | String | 9a7791e6-1a12-4e50-a105-070228292f88 | 用於接續對話 |
 | **b_orig_respondID**| 模型B-前回應ID | String | 10e7b966-fa75-4b73-9670-785f0bda2c39 | 用於接續對話 |
 | **URL** | 網址 URL | String | `https://...replit.dev/api/chat` | API 端點 |
+
+
+# 2️⃣ 辯論初始化 LLM 節點配置
+
+## 基本設定
+
+| 項目 | 值 |
+|------|-----|
+| **節點名稱** | 題目生成（建議） |
+| **節點類型** | LLM |
+| **模型** | claude-haiku-4.5-thinking |
+
+---
+
+## 輸入變數
+
+| 變數名稱 | 來源 | 說明 |
+|---------|------|------|
+| `debate_topic` | `{{#start.debate_topic#}}` | 辯論主題 |
+| `model_a_stance` | `{{#start.model_a_stance#}}` | 正方立場 |
+| `model_b_stance` | `{{#start.model_b_stance#}}` | 反方立場 |
+| `sys.query` | `{{#start.sys.query#}}` | 系統查詢（可選） |
+
+---
+
+## SYSTEM 提示詞
+
+```
+系統提示詞:
+請為以下辯論生成開場白和辯論框架：
+
+辯題：{{#start.debate_topic#}}
+正方立場：{{#start.model_a_stance#}}
+反方立場：{{#start.model_b_stance#}}
+```
+
+### USER 提示詞
+
+```
+請以繁體中文 輸出：
+1. 辯論背景說明
+2. 雙方需要論證的核心觀點
+3. 評判標準
+4. {{#sys.query#}}
+
+格式化輸出為 JSON。
+```
+
 
