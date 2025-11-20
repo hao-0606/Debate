@@ -500,7 +500,7 @@ def main(argument: str) -> dict:
     }
 ```
 
-### 📤 輸出變量 (Output Variables)
+## 📤 輸出變量 (Output Variables)
 
 請務必在節點右側面板設定以下輸出變數，否則後續節點無法獲取數據。
 
@@ -814,10 +814,52 @@ def main(api_response: str) -> dict:
 
 <div align=center>
 
-## 🔁5️⃣
+## 🔁5️⃣ A-轉 MD
 
 </div>
 
+### 📥 輸入變量 (Input Variables)
+
+| 變數名稱 (Key) | 來源節點 (Source) | 類型 | 說明 |
+| :--- | :--- | :--- | :--- |
+| **`argument`** | `A-CATCH.answer` | String | 正方 LLM 生成的原始論述內容 |
+
+---
+
+### 🐍 程式碼邏輯 (Python Code)
+
+```python
+def main(argument: str) -> dict:
+    """
+    將正方發言轉為美觀的 Markdown
+    """
+    from datetime import datetime
+    
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    
+    markdown = f"""### 🔵 第 {round_num} 輪 - 正方發言
+
+{argument}
+
+---
+"""
+    
+    return {
+        "markdown": markdown,
+        "text": argument
+    }
+```
+
+---
+
+### 📤 輸出變量 (Output Variables)
+
+請務必在節點右側面板設定以下輸出變數，否則後續節點無法獲取數據。
+
+| 變數名稱 (Key) | 類型 (Type) | 說明 |
+| :--- | :--- | :--- |
+| **`markdown`** | String | 格式化好的 Markdown 字串 (給 UI 顯示用) |
+| **`text`** | String | 原始純文字 (如果後續需要純文字分析可用) |
 
 <div align=center>
 
@@ -856,9 +898,51 @@ def main(api_response: str) -> dict:
 
 <div align=center>
 
-## 🔁
+## 🔁 🔟1️⃣ B-轉 MD
 
 </div>
+
+### 📥 輸入變量 (Input Variables)
+
+| 變數名稱 (Key) | 來源節點 (Source) | 類型 | 說明 |
+| :--- | :--- | :--- | :--- |
+| **`argument`** | `B-CATCH.answer` | String | 正方 LLM 生成的原始論述內容 |
+
+---
+
+### 🐍 程式碼邏輯 (Python Code)
+
+```python
+def main(argument: str) -> dict:
+    """
+    將正方發言轉為美觀的 Markdown
+    """
+    from datetime import datetime
+    
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    
+    markdown = f"""### 🔴 第 {round_num} 輪 - 反方發言
+
+{argument}
+---
+"""
+    
+    return {
+        "markdown": markdown,
+        "text": argument
+    }
+```
+
+---
+
+### 📤 輸出變量 (Output Variables)
+
+請務必在節點右側面板設定以下輸出變數，否則後續節點無法獲取數據。
+
+| 變數名稱 (Key) | 類型 (Type) | 說明 |
+| :--- | :--- | :--- |
+| **`markdown`** | String | 格式化好的 Markdown 字串 (給 UI 顯示用) |
+| **`text`** | String | 原始純文字 (如果後續需要純文字分析可用) |
 
 
 <div align=center>
