@@ -1143,15 +1143,64 @@ def main(argument: str) -> dict:
 
 <div align=center>
 
-## 🔟2️⃣ 
+## 🔟2️⃣ B-回覆
 
 </div>
 
 `B-轉MD.markdown`
 
+<div align=center>
+
+## 🔟 裁判評分
+
+</div>
+
+```
+系統提示詞:
+你是專業辯論裁判，請評分本輪交鋒：
+
+辯題：{{#START.debate_topic#}}
+
+第 {{#迭代.index#}}  輪：
+【正方】{{#conversation.a_result#}}
+【反方】{{#conversation.b_result#}}
+
+請評分（1-10分），並解釋：
+1. 正方論證強度：
+2. 反方論證強度：
+3. 正方邏輯嚴謹度：
+4. 反方邏輯嚴謹度：
+5. 本輪獲勝方：
+
+以 JSON 格式、繁體中文輸出。
+```
 
 <div align=center>
 
-## B-回覆
+## 🔟3️⃣ 裁判-回覆
 
 </div>
+
+裁判評分：{{#裁判評分.text#}}
+
+
+<div align=center>
+
+## 🔟4️⃣ 
+
+</div>
+
+
+<div align=center>
+
+## 
+
+</div>
+
+
+<div align=center>
+
+## 🔟
+
+</div>
+
