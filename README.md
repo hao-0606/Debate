@@ -872,9 +872,74 @@ def main(argument: str) -> dict:
 
 <div align=center>
 
-## 🔁7️⃣
+## 🔁7️⃣ B-Round提示詞
 
 </div>
+
+### ⚙️ 基本設定 (Configuration)
+
+| 設定項目 | 值 / 說明 |
+| :--- | :--- |
+| **節點類型** | Code (Python 3) |
+| **功能** | 提示詞生成 (Prompt Engineering) |
+
+---
+
+### 📥 輸入變量 (Input Variables)
+
+| 變數名稱 (Key) | 來源節點 (Source) | 類型 | 說明 |
+| :--- | :--- | :--- | :--- |
+| **`model_a_argument`**| `conversation.a_result` | String | 引用 **全域對話變數**，獲取 B 上一輪的發言內容。 |
+| **`round`** | `sys.iteration_index` | Number | 引用 **系統變數**，獲取當前是第幾輪 (1, 2, 3...)。 |
+
+> **✅ 關鍵點**：
+> *   `model_a_argument` 必須引用 `conversation.a_result`（全域變數），因為 A 的發言是在上一輪（或初始設定）存進去的。
+> *   `round` 引用 `sys.iteration_index` 是最穩定的做法，不要用 `item`，因為 `index` 也是從 1 開始 (在 Dify 新版中通常是這樣，若從 0 開始程式碼需 `+1`)。
+
+---
+
+### 🐍 程式碼邏輯 (Python Code)
+
+```python
+def main(
+    round: int, 
+    model_a_argument: str
+) -> dict:  # ✅ 改為 dict
+    
+    if round == 1:
+        # 第一輪：回應對方立論
+        prompt = f"""
+正方剛才的立論是：
+「{model_a_argument}」
+
+請：
+1. 發表你的立場
+2. 反駁正方觀點
+3. 提出你的論據
+"""
+    else:
+        # 後續輪次：持續交鋒
+        prompt = f"""
+正方剛才說：
+「{model_a_argument}」
+
+請反駁並深化你的論點。
+"""
+    
+    # ✅ 返回字典，key 必須和輸出變數一致
+    return {
+        "B_round_P": prompt
+    } 
+```
+
+---
+
+### 📤 輸出變量 (Output Variables)
+
+| 變數名稱 (Key) | 類型 (Type) | 說明 |
+| :--- | :--- | :--- |
+| **`B_round_P`** | String | 生成好的提示詞，將傳給 HTTP 節點的 Body |
+
 
 
 <div align=center>
