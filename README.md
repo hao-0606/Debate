@@ -944,21 +944,133 @@ def main(
 
 <div align=center>
 
-## 🔁8️⃣
+## 🔁8️⃣ HTTP 節點：模型 A 辯論 (Debate - Call Model A)
 
 </div>
+
+### ⚙️ 基本設定 (Configuration)
+
+| 設定項目 | 值 / 說明 |
+| :--- | :--- |
+| **方法 (Method)** | `POST` |
+| **URL** | `{{#start.URL#}}` |
+| **鑑權 (Auth)** | 無 |
+| **驗證 SSL** | 開啟 |
+
+---
+
+### 📨 請求標頭 (Headers)
+
+| 鍵 (Key) | 值 (Value) |
+| :--- | :--- |
+| **Content-Type** | `application/json` |
+
+---
+
+### 📦 請求內容 (Body) - JSON
+
+這是最容易出錯的地方，請仔細檢查變數來源是否正確（特別是 ID 的部分）。
+
+```json
+{
+  "message": "{{#B-Round提示詞.B_round_P#}}",
+  "model": "{{#start.b_model#}}",
+  "model_mode": "{{#start.b_mode#}}",
+  "conversation_id": "{{#conversation.b_conversation_id#}}",
+  "parent_response_id": "{{#conversation.b_response_id#}}",
+  "cookie": "{{#conversation.b_cookie#}}"
+}
+```
+
+<div align=center>
+
+## 🔁 9️⃣ B-Catch
+
+</div>
+
+此節點負責解析 API 回傳的 JSON 資料，提取模型的回應內容及更新後的對話 ID。
+
+### ⚙️ 基本設定 (Configuration)
+
+| 設定項目 | 值 / 說明 |
+| :--- | :--- |
+| **節點類型** | Code (Python 3) |
+| **功能** | JSON 解析 (JSON Parsing) |
+| **失敗時重試** | **開啟** (建議，避免因為網路波動導致單次解析失敗) |
+
+---
+
+### 📥 輸入變量 (Input Variables)
+
+| 變數名稱 (Key) | 來源節點 (Source) | 類型 | 說明 |
+| :--- | :--- | :--- | :--- |
+| **`api_response`** | `模型B發言.body` | String | HTTP 請求回傳的完整內容 |
+
+> **⚠️ 注意**：來源節點名稱為 `模型B發言`，這應該是你上一個 HTTP 節點的名稱。請確保選擇的是 `body` 屬性。
+
+---
+
+### 🐍 程式碼邏輯 (Python Code)
+
+這段代碼有做基本的防呆處理，能應對成功和失敗的情況。
+
+```python
+import json
+
+def main(api_response: str) -> dict:
+    """
+    更新對話上下文
+    從 API 回應中提取 conversation_id 和 response_id
+    """
+    try:
+        # 1. 解析 JSON：兼容字串或字典輸入
+        data = json.loads(api_response) if isinstance(api_response, str) else api_response
+        
+        # 2. 判斷 API 是否成功 (假設 API 回傳包含 success 欄位)
+        if data.get("success"):
+            result_data = data.get("data", {})
+            
+            # 3. 提取關鍵資訊
+            return {
+                "answer": result_data.get("response", ""),
+                "new_conversation_id": result_data.get("conversation_id", ""),
+                "new_response_id": result_data.get("response_id", ""),
+                "is_new": result_data.get("is_new_conversation", False)
+            }
+        else:
+            # API 回傳失敗訊息
+            return {
+                "answer": f"錯誤：{data.get('error', '未知錯誤')}",
+                "new_conversation_id": "",
+                "new_response_id": "",
+                "is_new": False
+            }
+            
+    except Exception as e:
+        # 程式解析炸裂 (例如 JSON 格式錯誤)
+        return {
+            "answer": f"解析錯誤：{str(e)}",
+            "new_conversation_id": "",
+            "new_response_id": "",
+            "is_new": False
+        }
+```
+
+---
+
+### 📤 輸出變量 (Output Variables)
+
+| 變數名稱 (Key) | 類型 (Type) | 說明 |
+| :--- | :--- | :--- |
+| **`answer`** | String | 模型的回答內容 (最重要！) |
+| **`new_conversation_id`** | String | 更新後的對話 ID |
+| **`new_response_id`** | String | 更新後的回應 ID |
+| **`is_new`** | Boolean | 是否為新對話 |
 
 
 <div align=center>
 
-## 🔁
-
-</div>
-
-
-<div align=center>
-
-## 🔁
+## 🔁 🔟
 
 </div>
 
