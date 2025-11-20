@@ -1193,14 +1193,47 @@ def main(argument: str) -> dict:
 
 <div align=center>
 
-## 
+## 🔟4️⃣ 
 
 </div>
 
 
 <div align=center>
 
-## 🔟
+## 🔟4️⃣ 
 
 </div>
 
+
+<div align=center>
+
+## ⚖️ Final-裁判評分
+
+</div>
+
+```
+系統提示詞:
+請總結整場辯論：
+
+辯題：{{#START.debate_topic#}}
+
+完整辯論記錄：
+{{#迭代.output#}}
+---
+
+請以繁體中文  輸出：
+1. 雙方總分統計
+2. 最精彩的論點
+3. 雙方的優劣分析
+4. 最終勝者及理由
+5. 辯論亮點與不足
+```
+
+
+<div align=center>
+
+## ⚖️ 直接回覆
+
+</div>
+
+`{{#Final-裁判評分.text#}}`
