@@ -1,5 +1,9 @@
 # Debate
 
+> [https://webapp-conversation-woad-beta.vercel.app/](https://webapp-conversation-woad-beta.vercel.app/)
+>
+> [https://udify.app/chat/lFs1Kvore2cnU6TY](https://udify.app/chat/lFs1Kvore2cnU6TY)
+
 <div align=center>
 
 # 0️⃣ 對話變數
