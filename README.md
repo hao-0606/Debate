@@ -4,6 +4,8 @@
 >
 > [https://udify.app/chat/lFs1Kvore2cnU6TY](https://udify.app/chat/lFs1Kvore2cnU6TY)
 
+[![Built with](https://img.shields.io/badge/Built%20with-Stima%20API-blueviolet?logo=robot)](https://api.stima.tech)
+
 <div align=center>
 
 # 0️⃣ 對話變數
